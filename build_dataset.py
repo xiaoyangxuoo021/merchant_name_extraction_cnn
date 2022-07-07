@@ -87,7 +87,6 @@ def load_dataset(path_csv, num_samples):
         dataset: (list) containing list of tuples like:(sentence, st_idx, end_idx)
 
     """
-
     use_python3 = sys.version_info[0] >= 3
     with (open(path_csv, encoding='utf-8') if use_python3 else open(path_csv)) as f:
         csv_file = csv.reader(f, delimiter=',')
@@ -98,9 +97,11 @@ def load_dataset(path_csv, num_samples):
                 break
             if idx == 0:
                 continue
-            _, sentence, st_idx, end_idx = row
-            st_idx = int(st_idx)
-            end_idx = int(end_idx)
+            if row[3] == '-1':
+                continue
+            sentence, cleanName, st_idx, end_idx = row[0], row[1], row[2], row[3]
+            st_idx = int(float(st_idx))
+            end_idx = int(float(end_idx))
             if 0 < len(sentence) < 300:
                 dataset.append((sentence, st_idx, end_idx))
 
@@ -315,28 +316,31 @@ def save_dict_to_json(d, json_path):
 
 
 if __name__ == "__main__":
-    args = parser.parse_args()
-    data_dir = args.data_dir
-    max_data_size = args.max_data_size
-    augment_mult = args.augment_mult
+    # args = parser.parse_args()
+    data_dir = 'data'
+    max_data_size = 20000
+    augment_mult = 3
     augment = (augment_mult > 0)
     dataset_path = os.path.join(data_dir, 'dataset.csv')
-
+    
     # Check that the dataset exists (you need to make sure you haven't downloaded the `ner.csv`)
     msg = f'{dataset_path} file not found. Make sure you have downloaded the right dataset'
     assert os.path.isfile(dataset_path), msg
 
     # Load the dataset into memory
     print("Loading dataset into memory...")
+    print(dataset_path)
     dataset = load_dataset(dataset_path, max_data_size)
     print("- done.")
+    #print(dataset)
+
 
     if augment:
         print(f'Doing augmentation operations {augment_mult} times for each sample')
         augment_dataset(dataset, augment_mult)
         print('- Done.')
 
-    # shuffle dataset
+    #shuffle dataset
     dataset = shuffle_dataset(dataset)
     dataset = dataset[:max_data_size]
 
@@ -357,4 +361,4 @@ if __name__ == "__main__":
         'test_size': len(test_dataset),
     }
 
-    save_dict_to_json(sizes, os.path.join(args.data_dir, 'dataset_params.json'))
+    save_dict_to_json(sizes, os.path.join(data_dir, 'dataset_params.json'))

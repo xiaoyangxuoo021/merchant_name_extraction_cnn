@@ -211,6 +211,36 @@ class MerchantNet(nn.Module):
 
         return indices_res
 
+def loss_fn(outputs, labels):
+    """
+    Compute the cross entropy loss given outputs from the model and labels for all tokens. Exclude loss terms
+    for PADding tokens.
+    Args:
+        outputs: (Variable) dimension batch_size*seq_len x num_tags - log softmax output of the model
+        labels: (Variable) dimension batch_size x seq_len where each element is either a label in [0, 1, ... num_tag-1],
+                or -1 in case it is a PADding token.
+    Returns:
+        loss: (Variable) cross entropy loss for all tokens in the batch
+    Note: you may use a standard loss function from http://pytorch.org/docs/master/nn.html#loss-functions. This example
+          demonstrates how you can easily define a custom loss function.
+    """
+
+    # reshape labels to give a flat vector of length batch_size*seq_len
+    labels = labels.view(-1)
+    outputs = outputs.view(-1)
+
+    # since PADding tokens have label -1, we can generate a mask to exclude the loss from those terms
+    mask = (labels >= 0).float()
+
+    # indexing with negative values is not supported. Since PADded tokens have label -1, we convert them to a positive
+    # number. This does not affect training, since we ignore the PADded tokens with the mask.
+    labels = labels % outputs.shape[1]
+
+    # num_tokens = int(torch.sum(mask))
+
+    # compute the predicted labels distance from the true labels
+    # return -torch.sum(outputs[range(outputs.shape[0]), labels]*mask)/num_tokens
+    return torch.sum(abs(labels[:, 0] - outputs[:, 0]) + abs(labels[:, 1] - outputs[:, 1]), dim = 0)
 
 def accuracy(outputs, indices):
     """

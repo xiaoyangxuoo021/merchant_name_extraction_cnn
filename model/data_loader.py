@@ -52,8 +52,10 @@ class DataLoader(object):
             str_binary = str_binary[:emb_dim]
             for str_index, str_char in enumerate(str_binary, 0):
                 str_array[str_index][index] = int(str_char)
+        # print('str_array: ', str_array)
 
         padding_str_binary = '0' * emb_dim
+        # print('padding_str_binary: ', padding_str_binary)
         for index in range(len(text), max_len):
             for str_index, str_char in enumerate(padding_str_binary, 0):
                 str_array[str_index][index] = int(str_char)
