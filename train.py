@@ -44,19 +44,17 @@ def train(model, optimizer, loss_fn, data_iterator, metrics, params, num_steps =
     # summary for current training loop and a running average object for loss
     summ = []
     loss_avg = utils.RunningAverage()
+    running_loss = 0
 
     # Use tqdm for progress bar
     t = trange(num_steps)
     for i in t:
         # fetch the next training batch
         train_batch, labels_batch = next(data_iterator)
+        
 
-        # print('train_batch: ', train_batch)
-        # print('train_batch size: ', train_batch.size())
         # compute model output and loss
         output_batch = model(train_batch)
-        # print('output_batch: ', output_batch )
-        # print('output_batch: ', output_batch.size())
         loss = loss_fn(output_batch, labels_batch)
 
         # clear previous gradients, compute gradients of all variables wrt loss
@@ -78,9 +76,10 @@ def train(model, optimizer, loss_fn, data_iterator, metrics, params, num_steps =
             summary_batch['loss'] = loss.item()
             summ.append(summary_batch)
 
-        # update the average loss
-        loss_avg.update(loss.item())
-        t.set_postfix(loss='{:05.3f}'.format(loss_avg()))
+        # save the loss and update the average loss
+        running_loss += loss
+        # loss_avg.update(loss.item())
+        # t.set_postfix(loss='{:05.3f}'.format(loss_avg()))
 
     # compute mean of all metrics in summary
     metrics_mean = {metric: np.mean([x[metric]
@@ -88,6 +87,7 @@ def train(model, optimizer, loss_fn, data_iterator, metrics, params, num_steps =
     metrics_string = " ; ".join("{}: {:05.3f}".format(k, v)
                                 for k, v in metrics_mean.items())
     logging.info("- Train metrics: " + metrics_string)
+    return running_loss / len(train_batch)
 
 
 def train_and_evaluate(model, train_data, val_data, optimizer, loss_fn, metrics, params, model_dir, restore_file=None):
@@ -112,8 +112,9 @@ def train_and_evaluate(model, train_data, val_data, optimizer, loss_fn, metrics,
         utils.load_checkpoint(restore_path, model, optimizer)
 
     best_val_acc = 0.0
-
+    losses = []
     for epoch in range(params.num_epochs):
+        
         # Run one epoch
         logging.info("Epoch {}/{}".format(epoch + 1, params.num_epochs))
 
@@ -121,9 +122,10 @@ def train_and_evaluate(model, train_data, val_data, optimizer, loss_fn, metrics,
         num_steps = (params.train_size + 1) // params.batch_size
         train_data_iterator = data_loader.data_iterator(
             train_data, params, shuffle=True)
-        train(model, optimizer, loss_fn, train_data_iterator,
+        epoch_loss = train(model, optimizer, loss_fn, train_data_iterator,
               metrics, params, num_steps)
-
+        losses.append(epoch_loss)
+    
         # Evaluate for one epoch on validation set
         num_steps = (params.val_size + 1) // params.batch_size
         val_data_iterator = data_loader.data_iterator(
@@ -156,6 +158,7 @@ def train_and_evaluate(model, train_data, val_data, optimizer, loss_fn, metrics,
         last_json_path = os.path.join(
             model_dir, "metrics_val_last_weights.json")
         utils.save_dict_to_json(val_metrics, last_json_path)
+    return losses
 
 
 if __name__ == '__main__':
@@ -206,5 +209,6 @@ if __name__ == '__main__':
 
     # Train the model
     logging.info("Starting training for {} epoch(s)".format(params.num_epochs))
-    train_and_evaluate(model, train_data, val_data, optimizer, loss_fn, metrics, params, args.model_dir,
+    losses = train_and_evaluate(model, train_data, val_data, optimizer, loss_fn, metrics, params, args.model_dir,
                        args.restore_file)
+    print(range(params.num_epochs), losses)
