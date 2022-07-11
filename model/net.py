@@ -230,17 +230,16 @@ def loss_fn(outputs, labels):
     outputs = outputs.view(-1)
 
     # since PADding tokens have label -1, we can generate a mask to exclude the loss from those terms
-    mask = (labels >= 0).float()
+    # mask = (labels >= 0).float()
 
     # indexing with negative values is not supported. Since PADded tokens have label -1, we convert them to a positive
     # number. This does not affect training, since we ignore the PADded tokens with the mask.
-    labels = labels % outputs.shape[1]
-
+    # labels = labels % outputs.shape[1]
     # num_tokens = int(torch.sum(mask))
-
     # compute the predicted labels distance from the true labels
     # return -torch.sum(outputs[range(outputs.shape[0]), labels]*mask)/num_tokens
-    return torch.sum(abs(labels[:, 0] - outputs[:, 0]) + abs(labels[:, 1] - outputs[:, 1]), dim = 0)
+    return (labels[0] - outputs[0])**2 + (labels[1] - outputs[1])**2
+    # return torch.sum(abs(labels[:, 0] - outputs[:, 0]) + abs(labels[:, 1] - outputs[:, 1]), dim = 0)
 
 def accuracy(outputs, indices):
     """

@@ -43,52 +43,51 @@ def train(model, optimizer, loss_fn, data_iterator, metrics, params, num_steps =
 
     # summary for current training loop and a running average object for loss
     summ = []
-    # loss_avg = utils.RunningAverage()
+    loss_avg = utils.RunningAverage()
 
     # Use tqdm for progress bar
     t = trange(num_steps)
     for i in t:
         # fetch the next training batch
         train_batch, labels_batch = next(data_iterator)
-        
-        print('train_batch: ', train_batch)
-        print('train_batch size: ', train_batch.size())
+
+        # print('train_batch: ', train_batch)
+        # print('train_batch size: ', train_batch.size())
         # compute model output and loss
         output_batch = model(train_batch)
-        print('output_batch: ', output_batch )
-        print('output_batch: ', output_batch.size())
-        # loss = loss_fn(output_batch, labels_batch)
+        # print('output_batch: ', output_batch )
+        # print('output_batch: ', output_batch.size())
+        loss = loss_fn(output_batch, labels_batch)
 
         # clear previous gradients, compute gradients of all variables wrt loss
-        # optimizer.zero_grad()
-        # loss.backward()
+        optimizer.zero_grad()
+        loss.backward()
 
         # performs updates using calculated gradients
-        # optimizer.step()
+        optimizer.step()
 
         # Evaluate summaries only once in a while
         if i % params.save_summary_steps == 0:
             # extract data from torch Variable, move to cpu, convert to numpy arrays
             output_batch = output_batch.data.cpu().numpy()
-            labels_batch = labels_batch.data.cpu().numpy()
-        
+            labels_batch = labels_batch.data.cpu().numpy()       
 
             # compute all metrics on this batch
-            # summary_batch = {metric: metrics[metric](output_batch, labels_batch)
-            #                  for metric in metrics}
-            # summary_batch['loss'] = loss.item()
-            # summ.append(summary_batch)
+            summary_batch = {metric: metrics[metric](output_batch, labels_batch)
+                             for metric in metrics}
+            summary_batch['loss'] = loss.item()
+            summ.append(summary_batch)
 
         # update the average loss
-        # loss_avg.update(loss.item())
-        # t.set_postfix(loss='{:05.3f}'.format(loss_avg()))
+        loss_avg.update(loss.item())
+        t.set_postfix(loss='{:05.3f}'.format(loss_avg()))
 
     # compute mean of all metrics in summary
-    # metrics_mean = {metric: np.mean([x[metric]
-    #                                  for x in summ]) for metric in summ[0]}
-    # metrics_string = " ; ".join("{}: {:05.3f}".format(k, v)
-    #                             for k, v in metrics_mean.items())
-    # logging.info("- Train metrics: " + metrics_string)
+    metrics_mean = {metric: np.mean([x[metric]
+                                     for x in summ]) for metric in summ[0]}
+    metrics_string = " ; ".join("{}: {:05.3f}".format(k, v)
+                                for k, v in metrics_mean.items())
+    logging.info("- Train metrics: " + metrics_string)
 
 
 def train_and_evaluate(model, train_data, val_data, optimizer, loss_fn, metrics, params, model_dir, restore_file=None):
@@ -134,6 +133,7 @@ def train_and_evaluate(model, train_data, val_data, optimizer, loss_fn, metrics,
 
         val_acc = val_metrics['accuracy']
         is_best = val_acc >= best_val_acc
+        
 
         # Save weights
         utils.save_checkpoint({'epoch': epoch + 1,
@@ -183,10 +183,13 @@ if __name__ == '__main__':
 
     # load data
     data_loader = DataLoader(args.data_dir, params)
-    data = data_loader.load_data(['train', 'val'], args.data_dir)
+    data = data_loader.load_data(['train', 'val', 'test'], args.data_dir)
     train_data = data['train']
     val_data = data['val']
+    test_data = data['test']
 
+    # print('printing training data...')
+    # print(test_data['size'])
     # specify the train and val dataset sizes
     params.train_size = train_data['size']
     params.val_size = val_data['size']
