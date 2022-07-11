@@ -239,8 +239,8 @@ def loss_fn(outputs, labels):
     # return -torch.sum(outputs[range(outputs.shape[0]), labels]*mask)/num_tokens
     # print('Printing labels...')
     # print(outputs)
-    return 1
-    #return torch.mean((labels[:, 0] - outputs[:, 0])**2 + (labels[:, 1] - outputs[:, 1])**2, dim = 0)
+    # return 1
+    return torch.mean((labels[:, 0] - outputs[:, 0])**2 + (labels[:, 1] - outputs[:, 1])**2, dim = 0)
     # return torch.sum(abs(labels[:, 0] - outputs[:, 0]) + abs(labels[:, 1] - outputs[:, 1]), dim = 0)
 
 def accuracy(outputs, indices):

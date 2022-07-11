@@ -51,10 +51,14 @@ def train(model, optimizer, loss_fn, data_iterator, metrics, params, num_steps =
     for i in t:
         # fetch the next training batch
         train_batch, labels_batch = next(data_iterator)
-        
+        print('printing labels...')
+        print(labels_batch.size())
+
 
         # compute model output and loss
         output_batch = model(train_batch)
+        print('printing outputs...')
+        print(output_batch.size())
         loss = loss_fn(output_batch, labels_batch)
 
         # clear previous gradients, compute gradients of all variables wrt loss
