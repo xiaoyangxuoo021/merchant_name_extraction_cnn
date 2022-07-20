@@ -51,14 +51,14 @@ def train(model, optimizer, loss_fn, data_iterator, metrics, params, num_steps =
     for i in t:
         # fetch the next training batch
         train_batch, labels_batch = next(data_iterator)
+
         print('printing labels...')
-        print(labels_batch.size())
-
-
+        print(labels_batch)
         # compute model output and loss
         output_batch = model(train_batch)
         print('printing outputs...')
-        print(output_batch.size())
+        print(output_batch)
+        
         loss = loss_fn(output_batch, labels_batch)
 
         # clear previous gradients, compute gradients of all variables wrt loss
@@ -215,4 +215,5 @@ if __name__ == '__main__':
     logging.info("Starting training for {} epoch(s)".format(params.num_epochs))
     losses = train_and_evaluate(model, train_data, val_data, optimizer, loss_fn, metrics, params, args.model_dir,
                        args.restore_file)
-    print(range(params.num_epochs), losses)
+
+    plot(range(params.num_epochs), losses)
